@@ -41,7 +41,7 @@ func ConnectDatabase() {
 		panic("数据库连接失败: " + err.Error())
 	}
 	// 自动迁移数据库模式 (创建表)
-	err = DB.AutoMigrate(&model.User{})
+	err = DB.AutoMigrate(&model.User{}, &model.Problem{}, &model.Solve{})
 	if err != nil {
 		log.Fatal("数据库迁移失败:", err)
 	}
