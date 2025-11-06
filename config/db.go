@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"us/model"
+
+	"github.com/NCUHOME-Y/25-HACK-1-Leaflet-BE/model"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
@@ -12,7 +13,7 @@ import (
 )
 
 // 数据库连接实例(导入数据库时使用)
-var DB   *gorm.DB
+var DB *gorm.DB
 
 func ConnectDatabase() {
 	// 加载 .env 文件
@@ -31,7 +32,7 @@ func ConnectDatabase() {
 	dbParseTime := os.Getenv("DB_PARSE_TIME")
 	dbLoc := os.Getenv("DB_LOC")
 
-	// 构建 DSN 
+	// 构建 DSN
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=%s&parseTime=%s&loc=%s",
 		dbUser, dbPassword, dbHost, dbPort, dbName, dbCharset, dbParseTime, dbLoc)
 
@@ -41,7 +42,7 @@ func ConnectDatabase() {
 		panic("数据库连接失败: " + err.Error())
 	}
 	// 自动迁移数据库模式 (创建表)
-	err = DB.AutoMigrate(&model.User{})
+	err = DB.AutoMigrate(&model.User{}, &model.Problem{}, &model.Solve{})
 	if err != nil {
 		log.Fatal("数据库迁移失败:", err)
 	}
