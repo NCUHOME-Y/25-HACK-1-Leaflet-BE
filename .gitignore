@@ -8,6 +8,3 @@ docker-compose.override.yml
 # IDE
 .vscode/
 .idea/
-
-# 临时文件
-/tmp
