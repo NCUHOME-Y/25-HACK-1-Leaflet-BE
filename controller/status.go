@@ -44,7 +44,10 @@ func CreateStatusEntry(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误或内容过长", "details": err.Error()})
 		return
 	} //绑定请求参数
-	todayStart := time.Now().Truncate(24 * time.Hour)
+	location, _ := time.LoadLocation("Asia/Shanghai")
+	now := time.Now().In(location)
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location) //获取今天的开始时间，避免说要距上一次24小时
+
 	var existingStatus model.Status //声明一个状态变量
 
 	err := config.DB.Where("user_id = ? AND created_at >= ?", currentUserID, todayStart).First(&existingStatus).Error //数据库里面查找存到真实用户id
@@ -54,12 +57,19 @@ func CreateStatusEntry(c *gin.Context) {
 		return
 	}
 	leafColor := determineLeafColor(req.TagID) //根据标签ID决定树叶颜色
+	var count int64
+	err = config.DB.Model(&model.Status{}).Where("user_id = ?", userID).Select("COUNT(*)").Count(&count).Error
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法获取状态计数", "details": err.Error()})
+		return
+	}
 
 	status := config.DB.Create(&model.Status{
 		UserID:    currentUserID,
 		TagID:     req.TagID,
 		LeafColor: leafColor,
 		Content:   req.Content,
+		Count:     count + 1,
 	}) //创建一个新的状态，把他存进数据库
 	if status.Error != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "心情状态保存失败", "details": status.Error.Error()})
@@ -132,5 +142,4 @@ func UpdateStatus(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "更新状态成功"})
-
 }

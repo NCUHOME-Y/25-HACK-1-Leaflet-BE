@@ -24,12 +24,6 @@ type LoginRequest struct {
 	Password string `json:"password" binding:"required"`
 }
 
-// 标签表（校园场景标签）
-type Tag struct {
-	gorm.Model
-	TagName string `json:"tag_name" gorm:"unique;not null"` // 标签名称
-}
-
 // 心情状态表
 type Status struct {
 	gorm.Model
@@ -37,6 +31,7 @@ type Status struct {
 	TagID     uint   `json:"tag_id" binding:"required" gorm:"not null"`   // 标签ID (1=困倦的早八, 2=自习室刷题, 等等)
 	Content   string `json:"content" binding:"required" gorm:"type:text"` // 内容
 	LeafColor string `json:"leaf_color"`                                  // 树叶颜色（自动生成）
+	Count     int64  `json:"count" gorm:"not null"`                       // 用户提交的状态总数
 }
 
 // 以下为情绪互动模块
