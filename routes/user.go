@@ -26,6 +26,6 @@ func Routes(rg *gin.Engine) {
 	rg.POST("/solve/:id", middlewares.JWTAuthMiddleware(), controller.UploadSolve)
 	rg.GET("/solve", middlewares.JWTAuthMiddleware(), controller.GetSolves)
 	rg.GET("/encouragements", controller.GetEncouragements)
-	rg.GET("/myself", middlewares.JWTAuthMiddleware(), controller.GetProfilePicture)
-	rg.PUT("/myself", middlewares.JWTAuthMiddleware(), controller.UpdateProfilePicture)
+	rg.GET("/image", middlewares.JWTAuthMiddleware(), controller.GetProfilePicture)
+	rg.PUT("/image", middlewares.JWTAuthMiddleware(), controller.UpdateProfilePicture)
 }
