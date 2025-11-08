@@ -26,7 +26,7 @@ func main() {
 
 	// 创建 Gin 路由器
 	r := gin.Default()
-	
+
 	// 配置 CORS 跨域 - 必须在路由注册之前
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"},
@@ -34,10 +34,10 @@ func main() {
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
-	
+
 	// 设置路由组 先配置 CORS → 再注册路由！
 	routes.Routes(r)
-	
+
 	// 启动服务器
 	log.Println("服务器启动在端口 8080")
 	r.Run(":8080")

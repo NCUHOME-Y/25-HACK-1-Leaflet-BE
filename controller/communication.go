@@ -110,7 +110,7 @@ func UpdateProblem(c *gin.Context) {
 			"username":   user.Username,
 			"user_id":    user.ID,
 			"problem_id": problemID,
-			"action":     "unauthorized_update_attempt",
+			"action":     "unauthorized_update_at+-tempt",
 		}).Warn("用户尝试修改不属于自己的问题")
 		return
 	}
