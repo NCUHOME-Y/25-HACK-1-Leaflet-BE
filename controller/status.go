@@ -111,18 +111,14 @@ func CreateStatusEntry(c *gin.Context) {
 // 根据标签获取相同状态人数
 func GetStatusesByTag(c *gin.Context) {
 	tagID := c.Param("tag_id") //从路径参数获取tagID
-	var Statuses []model.Status
-	if err := config.DB.Model(&model.Status{}). /*指定要查询的表,空的结构体指针*/ Where("tag_id = ?", tagID).Find(&Statuses).Error; err != nil {
+	var uniqueUsersCount int64
+	err := config.DB.Model(&model.Status{}).Where("tag_id = ?", tagID).Distinct("user_id").Count(&uniqueUsersCount).Error
+
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法获取状态", "details": err.Error()})
 		return
 	}
-	var length int
-	if len(Statuses) > 1 {
-		length = len(Statuses) - 1
-	} else {
-		length = len(Statuses)
-	}
-	c.JSON(http.StatusOK, gin.H{"count": length}) //返回状态和数量
+	c.JSON(http.StatusOK, gin.H{"count": uniqueUsersCount}) //返回状态和数量
 }
 
 // 查询个人所有记录
