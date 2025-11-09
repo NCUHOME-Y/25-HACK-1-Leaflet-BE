@@ -19,7 +19,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # 第二阶段：运行阶段
-FROM alpine:latest
+FROM alpine:3.20
 
 # 安装必要的运行时依赖
 RUN apk --no-cache add ca-certificates
