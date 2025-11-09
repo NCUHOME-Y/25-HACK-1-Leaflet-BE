@@ -27,11 +27,12 @@ type LoginRequest struct {
 // 心情状态表
 type Status struct {
 	gorm.Model
-	UserID    uint   `json:"user_id" gorm:"index:idx_user_time;not null"` // 用户ID
-	TagID     uint   `json:"tag_id" binding:"required" gorm:"not null"`   // 标签ID (1=困倦的早八, 2=自习室刷题, 等等)
-	Content   string `json:"content" binding:"required" gorm:"type:text"` // 内容
-	LeafColor string `json:"leaf_color"`                                  // 树叶颜色（自动生成）
-	Count     int64  `json:"count" gorm:"not null"`                       // 用户连续提交的状态天数
+	UserID         uint   `json:"user_id" gorm:"index:idx_user_time;not null"` // 用户ID
+	TagID          uint   `json:"tag_id" binding:"required" gorm:"not null"`   // 标签ID (1=困倦的早八, 2=自习室刷题, 这种)
+	Content        string `json:"content" binding:"required" gorm:"type:text"` // 内容
+	LeafColor      string `json:"leaf_color"`                                  // 树叶颜色
+	Count          int64  `json:"count" gorm:"not null"`                       // 用户连续提交的天数
+	AllRecordCount uint   `json:"all_record_count"`                            // 用户总提交次数
 }
 
 // 以下为情绪互动模块
