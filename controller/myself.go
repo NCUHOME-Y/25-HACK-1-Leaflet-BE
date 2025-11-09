@@ -169,3 +169,27 @@ func UpdateProfilePicture(c *gin.Context) {
 		"action":             "update_avatar",
 	}).Info("用户更新头像成功")
 }
+
+func CalculateLevel(c *gin.Context) {
+	currentUserID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未登录"})
+		return
+	}
+
+	var user model.User
+	if err := config.DB.First(&user, currentUserID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "用户不存在"})
+		return
+	}
+
+	// 计算用户等级
+	var treelevel int64
+	err := config.DB.Model(&model.Status{}).Where("user_id = ?", currentUserID).Count(&treelevel).Error
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "无法计算等级", "details": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"level": (treelevel / 3) + 1}) //返回等级
+}

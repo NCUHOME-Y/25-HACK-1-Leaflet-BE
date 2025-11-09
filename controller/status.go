@@ -197,7 +197,7 @@ func UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	statusID := c.Param("id")
+	statusID := c.Param("id") //这个是标签表中的id
 	var req model.Status
 	err := c.ShouldBindJSON(&req)
 	if err != nil {

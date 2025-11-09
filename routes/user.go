@@ -31,9 +31,10 @@ func Routes(rg *gin.Engine) {
 		{
 			status.POST("", controller.CreateStatusEntry)
 			status.GET("/by_tag/:tag_id", controller.GetStatusesByTag)
-			status.GET("/by_user/:user_id", controller.GetStatus)
+			status.GET("/mine", controller.GetStatus)
 			status.PUT("/:id", controller.UpdateStatus)
 			status.DELETE("/:id", controller.DeleteStatus)
+			status.GET("/level", controller.CalculateLevel)
 		}
 
 		// Solve 相关路由
