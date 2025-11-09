@@ -42,5 +42,12 @@ func Routes(rg *gin.Engine) {
 			solve.POST("/:id", controller.UploadSolve)
 			solve.GET("", controller.GetSolves)
 		}
+
+		// Image 相关路由
+		image := auth.Group("/image")
+		{
+			image.GET("", controller.GetProfilePicture)
+			image.PUT("", controller.UpdateProfilePicture)
+		}
 	}
 }
