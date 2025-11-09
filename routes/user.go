@@ -50,5 +50,9 @@ func Routes(rg *gin.Engine) {
 			image.GET("", controller.GetProfilePicture)
 			image.PUT("", controller.UpdateProfilePicture)
 		}
+		username := auth.Group("/username")
+		{
+			username.PUT("/:id", controller.UpdateName)
+		}
 	}
 }

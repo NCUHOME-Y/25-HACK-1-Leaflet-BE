@@ -193,3 +193,49 @@ func CalculateLevel(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"level": (treelevel / 3) + 1}) //返回等级
 }
+
+func UpdateName(c *gin.Context) {
+	currentUserID, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "未登录"})
+		return
+	}
+
+	var req struct {
+		UserName string `json:"user_name" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误", "details": err.Error()})
+		return
+	}
+
+	var user model.User
+	if err := config.DB.First(&user, currentUserID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "用户不存在"})
+		return
+	}
+
+	oldUsername := user.Username
+	user.Username = req.UserName
+	if err := config.DB.Save(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新用户名失败", "details": err.Error()})
+		consts.Logger.WithFields(logrus.Fields{
+			"username":     oldUsername,
+			"user_id":      currentUserID,
+			"new_username": req.UserName,
+			"action":       "update_username",
+			"error":        err.Error(),
+		}).Error("更新用户名失败")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "用户名更新成功"})
+
+	// 记录成功事件
+	consts.Logger.WithFields(logrus.Fields{
+		"old_username": oldUsername,
+		"new_username": req.UserName,
+		"user_id":      currentUserID,
+		"action":       "update_username",
+	}).Info("用户更新用户名成功")
+}
