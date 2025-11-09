@@ -133,9 +133,17 @@ func UpdateProfilePicture(c *gin.Context) {
 	}
 
 	// 用户已有头像记录，更新现有记录
-	err = config.DB.Model(&myself).Updates(gin.H{
+	/*err = config.DB.Model(&myself).Updates(gin.H{
 		"url":                avatarURL,
 		"profile_picture_id": req.ProfilePictureID,
+	}).Error8    这里是我的原来写的，然后会出问题，AI说这里是map (gin.H) 来更新记录时，GORM 需要处理这个 map 键值对。由于您在 model.Myself 中嵌入了 gorm.Model（包含 ID, CreatedAt, UpdatedAt, DeletedAt 四个字段），GORM 在处理 map 时有时会错误地尝试将 map 中的键映射到这些内部字段，或者在类型推断上发生错误*/
+
+	err = config.DB.Model(&myself).Updates(struct {
+		URL              string
+		ProfilePictureID uint
+	}{
+		URL:              avatarURL,
+		ProfilePictureID: req.ProfilePictureID,
 	}).Error
 
 	if err != nil {
