@@ -48,5 +48,11 @@ func ConnectDatabase() {
 		log.Fatal("数据库迁移失败:", err)
 	}
 
+	// 初始化鼓励话语数据
+	InitMorning()
+	InitAfternoon()
+	InitEvening()
+
 	log.Println("数据库连接成功")
 }
+
