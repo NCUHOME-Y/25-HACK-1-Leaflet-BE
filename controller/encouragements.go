@@ -23,13 +23,13 @@ func GetEncouragements(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		// 如果没有数据，返回空
 		if len(encouragements) == 0 {
 			c.JSON(http.StatusOK, gin.H{"encouragement": nil, "message": "暂无鼓励话语"})
 			return
 		}
-		
+
 		// 随机选择一条
 		randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(encouragements))))
 		if err != nil {
@@ -47,13 +47,13 @@ func GetEncouragements(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		
+
 		// 如果没有数据，返回空
 		if len(encouragementsAfternoon) == 0 {
 			c.JSON(http.StatusOK, gin.H{"encouragement": nil, "message": "暂无鼓励话语"})
 			return
 		}
-		
+
 		// 随机选择一条
 		randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(encouragementsAfternoon))))
 		if err != nil {
@@ -70,13 +70,13 @@ func GetEncouragements(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// 如果没有数据，返回空
 	if len(encouragementsEvening) == 0 {
 		c.JSON(http.StatusOK, gin.H{"encouragement": nil, "message": "暂无鼓励话语"})
 		return
 	}
-	
+
 	// 随机选择一条
 	randomIndex, err := rand.Int(rand.Reader, big.NewInt(int64(len(encouragementsEvening))))
 	if err != nil {

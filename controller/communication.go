@@ -57,10 +57,10 @@ func UploadProblem(c *gin.Context) {
 	// 检查审核结果
 	if !moderationResult.IsApproved {
 		consts.Logger.WithFields(logrus.Fields{
-			"username":  req.SenderName,
-			"user_id":   user.ID,
-			"action":    "content_rejected",
-			"reason":    moderationResult.Reason,
+			"username":   req.SenderName,
+			"user_id":    user.ID,
+			"action":     "content_rejected",
+			"reason":     moderationResult.Reason,
 			"confidence": moderationResult.Confidence,
 		}).Warn("用户上传内容未通过审核")
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -147,10 +147,10 @@ func UpdateProblem(c *gin.Context) {
 	// 检查审核结果
 	if !moderationResult.IsApproved {
 		consts.Logger.WithFields(logrus.Fields{
-			"username":  user.Username,
-			"user_id":   user.ID,
-			"action":    "content_rejected",
-			"reason":    moderationResult.Reason,
+			"username":   user.Username,
+			"user_id":    user.ID,
+			"action":     "content_rejected",
+			"reason":     moderationResult.Reason,
 			"confidence": moderationResult.Confidence,
 		}).Warn("用户修改内容未通过审核")
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -421,10 +421,10 @@ func ChangeProblem(c *gin.Context) {
 	// 检查审核结果
 	if !moderationResult.IsApproved {
 		consts.Logger.WithFields(logrus.Fields{
-			"username":  user.Username,
-			"user_id":   user.ID,
-			"action":    "content_rejected",
-			"reason":    moderationResult.Reason,
+			"username":   user.Username,
+			"user_id":    user.ID,
+			"action":     "content_rejected",
+			"reason":     moderationResult.Reason,
 			"confidence": moderationResult.Confidence,
 		}).Warn("用户修改内容未通过审核")
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -486,30 +486,30 @@ func UploadSolve(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "用户不存在"})
 		return
 	}
-	
+
 	// 从URL参数获取问题ID
 	problemIDStr := c.Param("id")
 	if problemIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "问题ID不能为空"})
 		return
 	}
-	
+
 	// 验证问题是否存在
 	problemID, err := strconv.ParseUint(problemIDStr, 10, 32)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的问题ID"})
 		return
 	}
-	
+
 	var problem model.Problem
 	if err := config.DB.First(&problem, uint(problemID)).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "问题不存在"})
 		return
 	}
-	
+
 	req := model.Solve{
-		ProblemID:    problemIDStr,
-		UserID:        claims.(uint),
+		ProblemID: problemIDStr,
+		UserID:    claims.(uint),
 	}
 	// 绑定请求体
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -534,10 +534,10 @@ func UploadSolve(c *gin.Context) {
 	// 检查审核结果
 	if !moderationResult.IsApproved {
 		consts.Logger.WithFields(logrus.Fields{
-			"username":  user.Username,
-			"user_id":   user.ID,
-			"action":    "content_rejected",
-			"reason":    moderationResult.Reason,
+			"username":   user.Username,
+			"user_id":    user.ID,
+			"action":     "content_rejected",
+			"reason":     moderationResult.Reason,
 			"confidence": moderationResult.Confidence,
 		}).Warn("用户解决方案未通过审核")
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -547,10 +547,10 @@ func UploadSolve(c *gin.Context) {
 		})
 		return
 	}
-	
+
 	// 开始数据库事务
 	tx := config.DB.Begin()
-	
+
 	// 保存解决方案到数据库
 	if err := tx.Create(&req).Error; err != nil {
 		tx.Rollback()
@@ -562,7 +562,7 @@ func UploadSolve(c *gin.Context) {
 		}).Error("用户上传解决方案失败")
 		return
 	}
-	
+
 	// 更新问题的回应次数
 	if err := tx.Model(&problem).Update("response", problem.Response+1).Error; err != nil {
 		tx.Rollback()
@@ -575,18 +575,18 @@ func UploadSolve(c *gin.Context) {
 		}).Error("更新问题回应次数失败")
 		return
 	}
-	
+
 	// 提交事务
 	tx.Commit()
-	
+
 	c.JSON(http.StatusOK, gin.H{"message": "上传成功"})
 
 	// 记录成功事件
 	consts.Logger.WithFields(logrus.Fields{
-		"username":    user.Username,
-		"user_id":     user.ID,
-		"problem_id":  problemID,
-		"action":      "user_upload_solve",
+		"username":     user.Username,
+		"user_id":      user.ID,
+		"problem_id":   problemID,
+		"action":       "user_upload_solve",
 		"new_response": problem.Response + 1,
 	}).Info("用户上传解决方案成功")
 }
@@ -602,26 +602,26 @@ func GetSolves(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "用户不存在"})
 		return
 	}
-	
+
 	// 首先获取当前用户上传的所有问题
 	var userProblems []model.Problem
 	if err := config.DB.Where("user_id = ?", claims.(uint)).Find(&userProblems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	
+
 	// 如果用户没有上传任何问题，返回空数组
 	if len(userProblems) == 0 {
 		c.JSON(http.StatusOK, gin.H{"solves": []model.Solve{}})
 		return
 	}
-	
+
 	// 收集所有问题ID
 	problemIDs := make([]string, len(userProblems))
 	for i, problem := range userProblems {
 		problemIDs[i] = strconv.FormatUint(uint64(problem.ID), 10)
 	}
-	
+
 	// 获取这些问题对应的所有解决方案
 	var solves []model.Solve
 	if err := config.DB.Where("problem_id IN ?", problemIDs).Find(&solves).Error; err != nil {
@@ -631,10 +631,10 @@ func GetSolves(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"solves": solves})
 	consts.Logger.WithFields(logrus.Fields{
-		"action":     "get_solves",
-		"user_id":    user.ID,
-		"username":   user.Username,
+		"action":        "get_solves",
+		"user_id":       user.ID,
+		"username":      user.Username,
 		"problem_count": len(userProblems),
-		"solve_count":  len(solves),
+		"solve_count":   len(solves),
 	}).Info("获取用户问题的解决方案成功")
 }

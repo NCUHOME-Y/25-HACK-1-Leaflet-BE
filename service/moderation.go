@@ -7,49 +7,51 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
-// SiliconFlowAPI 硅基流动API结构
+// 硅基流动API结构
 type SiliconFlowAPI struct {
 	BaseURL string
 	APIKey  string
 	Model   string
 }
 
-// ModerationRequest 审核请求结构
+// 审核请求结构
 type ModerationRequest struct {
 	Model    string `json:"model"`
 	Messages []Message `json:"messages"`
 }
 
-// Message 消息结构
+// 消息结构
 type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
 
-// ModerationResponse 审核响应结构
+// 审核响应结构
 type ModerationResponse struct {
 	Choices []Choice `json:"choices"`
 }
 
-// Choice 选择结构
+// 选择结构
 type Choice struct {
 	Message Message `json:"message"`
 }
 
-// ModerationResult 审核结果
+// 审核结果
 type ModerationResult struct {
 	IsApproved bool   `json:"is_approved"`
 	Reason     string `json:"reason"`
 	Confidence float64 `json:"confidence"`
 }
 
-// NewModerationService 创建新的审核服务
+// 创建新的审核服务
 func NewModerationService() *SiliconFlowAPI {
 	return &SiliconFlowAPI{
 		BaseURL: os.Getenv("SILICONFLOW_BASE_URL"),
@@ -58,7 +60,7 @@ func NewModerationService() *SiliconFlowAPI {
 	}
 }
 
-// ModerateContent 审核内容
+// 审核内容
 func (api *SiliconFlowAPI) ModerateContent(content string) (*ModerationResult, error) {
 	// 检查是否启用审核
 	enabledStr := os.Getenv("CONTENT_MODERATION_ENABLED")
@@ -93,7 +95,22 @@ func (api *SiliconFlowAPI) ModerateContent(content string) (*ModerationResult, e
 		}, nil
 	}
 
-	// 构建审核提示词
+	// 第一层：本地关键词过滤（快速拦截明显违规内容）
+	if blocked, reason := isBlockedByKeywords(content); blocked {
+		logrus.WithFields(logrus.Fields{
+			"content_preview": content[:min(100, len(content))],
+			"reason":          reason,
+			"content_length":  len(content),
+		}).Warn("内容被本地关键词过滤拦截")
+		
+		return &ModerationResult{
+			IsApproved: false,
+			Reason:     reason,
+			Confidence: 1.0,
+		}, nil
+	}
+
+	// 第二层：AI智能审核
 	prompt := fmt.Sprintf(`请审核以下内容是否合规。请检查以下方面：
 1. 是否包含违法、暴力、色情、政治敏感等不当内容
 2. 是否包含人身攻击、歧视性言论
@@ -102,9 +119,9 @@ func (api *SiliconFlowAPI) ModerateContent(content string) (*ModerationResult, e
 
 请以JSON格式返回审核结果，格式如下：
 {
-  "is_approved": true/false,
-  "reason": "审核通过/拒绝的具体原因",
-  "confidence": 0.0-1.0
+	 "is_approved": true/false,
+	 "reason": "审核通过/拒绝的具体原因",
+	 "confidence": 0.0-1.0
 }
 
 待审核内容：%s`, content)
@@ -156,7 +173,7 @@ func (api *SiliconFlowAPI) ModerateContent(content string) (*ModerationResult, e
 	return result, nil
 }
 
-// callAPI 调用硅基流动API
+// 调用硅基流动API
 func (api *SiliconFlowAPI) callAPI(req ModerationRequest) (*ModerationResult, error) {
 	// 序列化请求
 	jsonData, err := json.Marshal(req)
@@ -260,6 +277,94 @@ func containsSubstring(text, substring string) bool {
 		}
 	}
 	return false
+}
+
+// isBlockedByKeywords 本地关键词过滤检查
+func isBlockedByKeywords(content string) (bool, string) {
+	// 转换为小写进行匹配
+	lowerContent := strings.ToLower(content)
+	
+	// 脏话和不当词汇列表（可根据需要扩展）
+	blockedWords := []string{
+		// 脏话
+		"操你妈", "草泥马", "傻逼", "他妈的", "狗日的", "婊子", "贱人", "废物",
+		"操", "草", "傻b", "sb", "tmd", "cnm", "nmb", "wocao", "我操",
+		// 暴力词汇
+		"杀", "死", "砍", "刀", "血", "暴力", "杀死", "弄死", "干死",
+		// 色情词汇
+		"色情", "黄片", "做爱", "性交", "淫秽", "露点", "裸体",
+		// 违法词汇
+		"毒品", "吸毒", "赌博", "赌场", "高利贷", "诈骗", "传销",
+		// 极端言论
+		"恐怖", "炸弹", "炸药", "自杀", "自残",
+	}
+	
+	// 检查是否包含禁用词汇
+	for _, word := range blockedWords {
+		if strings.Contains(lowerContent, word) {
+			return true, fmt.Sprintf("内容包含不当词汇: %s", word)
+		}
+	}
+	
+	// 检查重复字符模式（如：啊啊啊啊，操操操）
+	if hasExcessiveRepetition(lowerContent) {
+		return true, "内容包含过度重复的字符"
+	}
+	
+	// 检查是否主要是乱码或无意义字符
+	if isMostlyGarbage(content) {
+		return true, "内容包含大量无意义字符"
+	}
+	
+	return false, ""
+}
+
+// hasExcessiveRepetition 检查是否有过度重复的字符
+func hasExcessiveRepetition(content string) bool {
+	// 检查连续重复字符（如：啊啊啊啊，操操操）
+	repeatPattern := regexp.MustCompile(`(.)\1{3,}`)
+	if repeatPattern.MatchString(content) {
+		return true
+	}
+	
+	// 检查重复词汇模式
+	words := strings.Fields(content)
+	if len(words) > 3 {
+		wordCount := make(map[string]int)
+		for _, word := range words {
+			if len(word) > 1 { // 忽略单字符
+				wordCount[strings.ToLower(word)]++
+			}
+		}
+		
+		// 如果某个词汇重复超过3次，认为是垃圾内容
+		for _, count := range wordCount {
+			if count > 3 {
+				return true
+			}
+		}
+	}
+	
+	return false
+}
+
+// isMostlyGarbage 检查是否主要是乱码
+func isMostlyGarbage(content string) bool {
+	if len(content) < 5 {
+		return false
+	}
+	
+	// 计算非字母数字字符的比例
+	nonAlnumCount := 0
+	for _, r := range content {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
+			 r == ' ' || r == '\n' || r == '\t' || r == '，' || r == '。' || r == '！' || r == '？') {
+			nonAlnumCount++
+		}
+	}
+	
+	// 如果超过30%是特殊字符，认为是乱码
+	return float64(nonAlnumCount)/float64(len(content)) > 0.3
 }
 
 // min 返回两个整数中的较小值
