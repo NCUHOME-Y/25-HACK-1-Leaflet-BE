@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// 获取预设头像列表和用户当前头像
+// 获取预设头像列表和用户当前头像（现在也不用这个功能了，之前是考虑存头像，但是前端那边直接弄完了，不需要过数据库了）
 func GetProfilePicture(c *gin.Context) {
 	currentUserID, exists := c.Get("user_id")
 	if !exists {
@@ -64,7 +64,6 @@ func UpdateProfilePicture(c *gin.Context) {
 		return
 	}
 
-	// 请求体结构
 	var req struct {
 		ProfilePictureID uint `json:"profile_picture_id" binding:"required"`
 	}
@@ -73,7 +72,7 @@ func UpdateProfilePicture(c *gin.Context) {
 		return
 	}
 
-	// 验证头像ID是否有效
+	// 验证头像ID是否正确
 	var avatarURL string
 	found := false
 	for _, avatar := range consts.ProfilePictures {
@@ -170,6 +169,7 @@ func UpdateProfilePicture(c *gin.Context) {
 	}).Info("用户更新头像成功")
 }
 
+// 头像部分一直到这，上面都是没用到的
 func CalculateLevel(c *gin.Context) {
 	currentUserID, exists := c.Get("user_id")
 	if !exists {
@@ -238,4 +238,4 @@ func UpdateName(c *gin.Context) {
 		"user_id":      currentUserID,
 		"action":       "update_username",
 	}).Info("用户更新用户名成功")
-}
+} //这个改名字也不用了

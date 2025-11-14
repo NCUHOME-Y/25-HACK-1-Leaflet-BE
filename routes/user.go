@@ -52,7 +52,7 @@ func Routes(rg *gin.Engine) {
 		}
 		username := auth.Group("/username")
 		{
-			username.PUT("/:id", controller.UpdateName)
+			username.PUT("/:id", controller.UpdateName) //修改用户名(前端也直接弄了，就不用调这个了)
 		}
 	}		
 }

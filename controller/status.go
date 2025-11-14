@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// 根据标签ID决定树叶颜色(后续可替换颜色)
+// 根据标签ID决定树叶颜色(现在好像不用这个功能了)
 func determineLeafColor(tagID uint) string {
 	switch tagID {
 	case 1: // 困倦的早八
@@ -33,7 +33,7 @@ func determineLeafColor(tagID uint) string {
 	}
 }
 
-// 创建状态条目
+// 创建心情状态记录
 func CreateStatusEntry(c *gin.Context) {
 	userID, exists := c.Get("user_id")
 	if !exists {
@@ -60,29 +60,29 @@ func CreateStatusEntry(c *gin.Context) {
 	var sumcont int64
 	config.DB.Model(&model.Status{}).Where("user_id = ?", currentUserID).Count(&sumcont)
 
-	leafColor := determineLeafColor(req.TagID) //根据标签ID决定树叶颜色
+	leafColor := determineLeafColor(req.TagID) //根据标签ID决定树叶颜色（现在好像不用这个功能了）
 
 	// 计算连续记录天数
 	var consecutiveDays int64 = 1 // 默认是第1天
 	yesterdayStart := todayStart.Add(-24 * time.Hour)
 
 	var yesterdayStatus model.Status
-	// 查找昨天的记录
+	// 查昨天的记录
 	err := config.DB.Where("user_id = ? AND created_at >= ? AND created_at < ?", currentUserID, yesterdayStart, todayStart).Order("created_at DESC").First(&yesterdayStatus).Error
 
 	if err == nil {
-		// 昨天有记录，连续天数+1
+		// 如果昨天有记录，连续天数+1
 		consecutiveDays = int64(yesterdayStatus.Count) + 1
 	}
-	// 如果没有昨天的记录（err != nil），consecutiveDays 保持为 1（重新开始计数）
+	// 如果没有昨天的记录重新开始计数
 
 	status := config.DB.Create(&model.Status{
 		UserID:         currentUserID,
 		TagID:          req.TagID,
 		LeafColor:      leafColor,
 		Content:        req.Content,
-		Count:          consecutiveDays, // 连续连续天数
-		AllRecordCount: uint(sumcont) + 1,
+		Count:          consecutiveDays,   // 连续连续天数
+		AllRecordCount: uint(sumcont) + 1, //加一是因为这个记录正在创建，还没存到数据库，所以后面数不到，所以加一
 	}) //创建一个新的状态，把他存进数据库
 
 	if status.Error != nil {
@@ -210,7 +210,7 @@ func UpdateStatus(c *gin.Context) {
 		return
 	}
 
-	//添加权限判断，避免用户修改他人的状态
+	//添加权限判断，避免用户修改他人的状态（由于讨论也不用弄这个了，因为看不了别人的记录所以删改都不行）
 	if status.UserID != currentUserID {
 		c.JSON(http.StatusForbidden, gin.H{"error": "无权限编辑此个人心情记录状态"})
 		consts.Logger.WithFields(logrus.Fields{
