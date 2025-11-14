@@ -312,21 +312,21 @@ func GetProblems(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "用户不存在"})
 		return
 	}
-	var allProblems []model.Problem
-	// 获取所有问题
-	if err := config.DB.Find(&allProblems).Error; err != nil {
+	var otherUsersProblems []model.Problem
+	// 获取除当前用户外的所有问题
+	if err := config.DB.Where("user_id != ?", claims.(uint)).Find(&otherUsersProblems).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// 如果没有问题，返回空数组
-	if len(allProblems) == 0 {
+	// 如果没有其他用户的问题，返回空数组
+	if len(otherUsersProblems) == 0 {
 		c.JSON(http.StatusOK, gin.H{"problem": nil})
 		return
 	}
 
 	// 使用 crypto/rand 随机选择1个索引
-	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(allProblems))))
+	nBig, err := rand.Int(rand.Reader, big.NewInt(int64(len(otherUsersProblems))))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "随机数生成失败"})
 		return
@@ -334,7 +334,7 @@ func GetProblems(c *gin.Context) {
 	idx := int(nBig.Int64())
 
 	// 获取随机选择的问题
-	problem := allProblems[idx]
+	problem := otherUsersProblems[idx]
 
 	c.JSON(http.StatusOK, gin.H{"problem": problem})
 	consts.Logger.WithFields(logrus.Fields{
@@ -581,28 +581,26 @@ func GetSolves(c *gin.Context) {
 		return
 	}
 
-	// 首先获取当前用户上传的所有问题
-	var userProblems []model.Problem
-	if err := config.DB.Where("user_id = ?", claims.(uint)).Find(&userProblems).Error; err != nil {
+	// 统计当前用户发布的问题数量
+	var problemCount int64
+	if err := config.DB.Model(&model.Problem{}).Where("user_id = ?", claims.(uint)).Count(&problemCount).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
 	// 如果用户没有上传任何问题，返回空数组
-	if len(userProblems) == 0 {
+	if problemCount == 0 {
 		c.JSON(http.StatusOK, gin.H{"solves": []model.Solve{}})
 		return
 	}
 
-	// 收集所有问题ID
-	problemIDs := make([]string, len(userProblems))
-	for i, problem := range userProblems {
-		problemIDs[i] = strconv.FormatUint(uint64(problem.ID), 10)
-	}
-
-	// 获取这些问题对应的所有解决方案
+	// 仅获取“当前用户发布的问题”的所有回复（解决方案）
+	// 说明：Solve.ProblemID 为字符串，这里用子查询并将 Problem.id 转为 CHAR 以确保匹配
 	var solves []model.Solve
-	if err := config.DB.Where("problem_id IN ?", problemIDs).Find(&solves).Error; err != nil {
+	if err := config.DB.Where(
+		"problem_id IN (SELECT CAST(id AS CHAR) FROM problems WHERE user_id = ?)",
+		claims.(uint),
+	).Find(&solves).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -612,7 +610,7 @@ func GetSolves(c *gin.Context) {
 		"action":        "get_solves",
 		"user_id":       user.ID,
 		"username":      user.Username,
-		"problem_count": len(userProblems),
+		"problem_count": problemCount,
 		"solve_count":   len(solves),
 	}).Info("获取用户问题的解决方案成功")
 }
