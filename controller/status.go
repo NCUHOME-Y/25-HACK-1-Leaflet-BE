@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -53,7 +54,14 @@ func CreateStatusEntry(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误或内容过长", "details": err.Error()})
 		return
 	} //绑定请求参数
-	location, _ := time.LoadLocation("Asia/Shanghai")
+	location, err := time.LoadLocation("Asia/Shanghai")
+
+	// 检查是否加载失败
+	if err != nil {
+		// 💡 最佳实践：如果加载失败，打印错误日志，并使用 time.Local 或 time.UTC 作为备用，防止程序崩溃
+		fmt.Printf("Error loading location 'Asia/Shanghai': %v. Using time.Local instead.\n", err)
+		location = time.Local // 或者 time.UTC
+	}
 	now := time.Now().In(location)
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location) //获取今天的开始时间，用于判断连续天数
 
@@ -68,7 +76,7 @@ func CreateStatusEntry(c *gin.Context) {
 
 	var yesterdayStatus model.Status
 	// 查昨天的记录
-	err := config.DB.Where("user_id = ? AND created_at >= ? AND created_at < ?", currentUserID, yesterdayStart, todayStart).Order("created_at DESC").First(&yesterdayStatus).Error
+	err = config.DB.Where("user_id = ? AND created_at >= ? AND created_at < ?", currentUserID, yesterdayStart, todayStart).Order("created_at DESC").First(&yesterdayStatus).Error
 
 	if err == nil {
 		// 如果昨天有记录，连续天数+1
