@@ -63,7 +63,7 @@ func CreateStatusEntry(c *gin.Context) {
 		location = time.Local // 或者 time.UTC
 	}
 	now := time.Now().In(location)
-	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location) //获取今天的开始时间，用于判断连续天数
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, location)
 
 	var sumcont int64
 	config.DB.Model(&model.Status{}).Where("user_id = ?", currentUserID).Count(&sumcont)
